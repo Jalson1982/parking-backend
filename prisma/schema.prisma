@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  firstName    String
+  lastName     String
+  role         String
+  credit       Int           @default(0)
+  plates       Plates[]
+  parkingSpot  ParkingSpot?
+  reservations Reservation[]
+  orders       Order[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Reservation {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  parkingSpotId Int
+  parkingSpot   ParkingSpot @relation(fields: [parkingSpotId], references: [id])
+  startTime     DateTime
+  endTime       DateTime
+  order         Order?      @relation(fields: [orderId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  orderId       Int?
+}
+
+model Order {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id])
+  parkingSpotId Int
+  parkingSpot   ParkingSpot   @relation(fields: [parkingSpotId], references: [id])
+  platesId      Int
+  plates        Plates        @relation(fields: [platesId], references: [id])
+  amountPaid    Int
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  Reservation   Reservation[]
+}
+
+model Plates {
+  id        Int      @id @default(autoincrement())
+  plate     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ParkingSpot {
+  id                Int                @id @default(autoincrement())
+  parkingNumber     String             @unique
+  address           String
+  vendorId          Int                @unique
+  vendor            User               @relation(fields: [vendorId], references: [id])
+  reservations      Reservation[]
+  orders            Order[]
+  availabilityDates AvailabilityDate[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model AvailabilityDate {
+  id            Int         @id @default(autoincrement())
+  date          DateTime
+  parkingSpotId Int
+  parkingSpot   ParkingSpot @relation(fields: [parkingSpotId], references: [id])
+  timeSlots     TimeSlot[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model TimeSlot {
+  id                 Int              @id @default(autoincrement())
+  startTime          Int
+  endTime            Int
+  availabilityDateId Int
+  availabilityDate   AvailabilityDate @relation(fields: [availabilityDateId], references: [id])
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
