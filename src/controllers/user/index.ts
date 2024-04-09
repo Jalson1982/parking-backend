@@ -4,7 +4,7 @@ import { prisma } from '../..';
 import jwt from 'jsonwebtoken';
 
 const generateToken = (userEmail: string) => {
-    return jwt.sign({ email: userEmail }, process.env.TOKEN_SECRET || '', { expiresIn: '24h' });
+    return jwt.sign({ email: userEmail }, process.env.TOKEN_SECRET ?? '', { expiresIn: '24h' });
   };
 
   
@@ -44,6 +44,12 @@ export const addNewUser = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
+    if(!email || !password) {
+        res.status(400).send({
+            message: 'Email and password are required',
+        });
+        return;
+    }
     const user = await prisma.user.findUnique({
         where: {
             email,
@@ -89,8 +95,8 @@ export const getUser = async (_: Request, res: Response) => {
     }
 
     const includeOptions = user.role === 'vendor' 
-        ? { parkingSpot: true } 
-        : { plates: true };
+        ? { parkingSpot: true, orders: true } 
+        : { plates: true, orders: true };
 
     const userDetails = await prisma.user.findUnique({
         where: { email },
@@ -113,7 +119,7 @@ export const getUser = async (_: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     const email = res.locals.email;
-    const { firstName, lastName, credit } = req.body;
+    const { firstName, lastName } = req.body;
     const user = await prisma.user.findUnique({
         where: {
             email,
@@ -132,7 +138,52 @@ export const updateUser = async (req: Request, res: Response) => {
         data: {
             firstName: firstName || user.firstName,
             lastName: lastName || user.lastName,
-            credit: credit || user.credit,
+        },
+    });
+    res.send({
+        user: updatedUser,
+    });
+}
+
+export const addCredit = async (req: Request, res: Response) => {
+    const email = res.locals.email;
+    const { creditCode } = req.body;
+    const user = await prisma.user.findUnique({
+        where: {
+            email,
+        },
+    });
+    if (!user) {
+        res.status(404).send({
+            message: 'User not found',
+        });
+        return;
+    }
+    const code = await prisma.creditCode.findUnique({
+        where: {
+            code: creditCode,
+        },
+    });
+    if (!code || code.isRedeemed) {
+        res.status(404).send({
+            message: 'Invalid credit code',
+        });
+        return;
+    }
+    const updatedUser = await prisma.user.update({
+        where: {
+            email,
+        },
+        data: {
+            totalCredits: user.totalCredits + (code?.amount ?? 0),
+        },
+    });
+    await prisma.creditCode.update({
+        where: {
+            code: creditCode,
+        },
+        data: {
+            isRedeemed: true,
         },
     });
     res.send({

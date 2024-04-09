@@ -20,13 +20,14 @@ model User {
   firstName    String
   lastName     String
   role         String
-  credit       Int           @default(0)
+  totalCredits Int           @default(0)
   plates       Plates[]
   parkingSpot  ParkingSpot?
   reservations Reservation[]
   orders       Order[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  CreditCode   CreditCode[]
 }
 
 model Reservation {
@@ -94,8 +95,20 @@ model TimeSlot {
   id                 Int              @id @default(autoincrement())
   startTime          Int
   endTime            Int
+  isAvailable        Boolean          @default(true)
   availabilityDateId Int
   availabilityDate   AvailabilityDate @relation(fields: [availabilityDateId], references: [id])
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+}
+
+model CreditCode {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique
+  amount     Int
+  isRedeemed Boolean  @default(false)
+  redeemedBy Int?
+  user       User?    @relation(fields: [redeemedBy], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
