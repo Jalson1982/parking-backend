@@ -21,13 +21,14 @@ export const createOrder = async (req: Request, res: Response) => {
                 userId: user.id,
                 parkingSpotId,
                 platesId,
+                timeSlotId,
                 amountPaid: 1,
             },
         });
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { totalCredits: user.totalCredits - 1 },
+            data: { totalCredits: { decrement: 1 } }
         });
     
         const timeSlotUpdate = await prisma.timeSlot.update({
@@ -58,3 +59,47 @@ export const getAllOrders = async (req: Request, res: Response) => {
         orders,
     });
 };
+
+export const getVendorOrders = async (req: Request, res: Response) => {
+    const email = res.locals.email;
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
+
+    if (!user || user.role !== 'vendor') {
+        return res.status(404).send({ message: 'User not found.' });
+    }
+
+    const soldTimeSlots = await prisma.parkingSpot.findMany({
+        where: {
+            vendor: {
+                id: user.id,
+            },
+        },
+        include: {
+            orders: {
+                include: {
+                    user: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                        }
+                    },
+                    plates: true,
+                    timeSlot: {
+                        select: {
+                            id: true,
+                            startTime: true,
+                            endTime: true,
+                            isAvailable: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+    res.send({
+        soldTimeSlots,
+    });
+}

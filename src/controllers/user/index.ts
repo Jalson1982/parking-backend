@@ -80,7 +80,6 @@ export const login = async (req: Request, res: Response) => {
 
 export const getUser = async (_: Request, res: Response) => {
     const email = res.locals.email;
-    console.log(email);
     const user = await prisma.user.findUnique({
         where: {
             email,

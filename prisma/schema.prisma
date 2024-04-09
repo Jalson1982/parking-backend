@@ -14,48 +14,34 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
   password     String
   firstName    String
   lastName     String
   role         String
-  totalCredits Int           @default(0)
+  totalCredits Int          @default(0)
   plates       Plates[]
   parkingSpot  ParkingSpot?
-  reservations Reservation[]
   orders       Order[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   CreditCode   CreditCode[]
 }
 
-model Reservation {
+model Order {
   id            Int         @id @default(autoincrement())
   userId        Int
   user          User        @relation(fields: [userId], references: [id])
   parkingSpotId Int
   parkingSpot   ParkingSpot @relation(fields: [parkingSpotId], references: [id])
-  startTime     DateTime
-  endTime       DateTime
-  order         Order?      @relation(fields: [orderId], references: [id])
+  platesId      Int
+  plates        Plates      @relation(fields: [platesId], references: [id])
+  timeSlotId    Int?
+  timeSlot      TimeSlot?   @relation(fields: [timeSlotId], references: [id])
+  amountPaid    Int
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  orderId       Int?
-}
-
-model Order {
-  id            Int           @id @default(autoincrement())
-  userId        Int
-  user          User          @relation(fields: [userId], references: [id])
-  parkingSpotId Int
-  parkingSpot   ParkingSpot   @relation(fields: [parkingSpotId], references: [id])
-  platesId      Int
-  plates        Plates        @relation(fields: [platesId], references: [id])
-  amountPaid    Int
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  Reservation   Reservation[]
 }
 
 model Plates {
@@ -74,7 +60,6 @@ model ParkingSpot {
   address           String
   vendorId          Int                @unique
   vendor            User               @relation(fields: [vendorId], references: [id])
-  reservations      Reservation[]
   orders            Order[]
   availabilityDates AvailabilityDate[]
   createdAt         DateTime           @default(now())
@@ -100,6 +85,7 @@ model TimeSlot {
   availabilityDate   AvailabilityDate @relation(fields: [availabilityDateId], references: [id])
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  Order              Order[]
 }
 
 model CreditCode {

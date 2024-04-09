@@ -13,7 +13,6 @@ export const generateCredits = async (req: Request, res: Response) => {
         where: { email },
     });
 
-    console.log('User:', user);
     if (!user || user.role !== 'vendor') {
         return res.status(404).send({ message: 'Vendor user not found.' });
     }
